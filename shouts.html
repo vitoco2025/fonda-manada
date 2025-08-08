@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Libro de visitas</title>
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<header>
+  <h1>Libro de visitas</h1>
+  <nav>
+    <a href="index.html">Inicio</a>
+    <a href="about.html">Acerca de</a>
+  </nav>
+</header>
+<main>
+  <p>Deja tu mensaje en el <strong>Google Form</strong> y se mostrará acá. (Instrucciones en README.md)</p>
+  <div id="shouts"></div>
+</main>
+<footer><small>Gracias por pasar.</small></footer>
+<script>
+// Reemplaza esta URL por la de tu Google Sheets publicado como CSV:
+const CSV_URL = "REEMPLAZA_AQUI_URL_CSV_PUBLICADO";
+async function loadCSV(url){
+  const res = await fetch(url);
+  const text = await res.text();
+  const rows = text.trim().split(/\r?\n/).map(r => r.split(","));
+  const [head, ...body] = rows;
+  return body.map(cols => Object.fromEntries(cols.map((v,i)=>[head[i], v])));
+}
+function render(items){
+  const box = document.getElementById('shouts');
+  if(!items.length){ box.innerHTML = "<p>(Aún sin mensajes)</p>"; return; }
+  box.innerHTML = items.slice(-50).reverse().map(it=>`
+    <article class="card">
+      <p>${(it.Mensaje||"").replace(/</g,"&lt;")}</p>
+      <small>— ${(it.Autor||"Anónimo")}</small>
+    </article>
+  `).join("");
+}
+loadCSV(CSV_URL).then(render).catch(()=>{
+  document.getElementById('shouts').innerHTML = "<p>No se pudo cargar el CSV. Revisa la URL.</p>";
+});
+</script>
+</body>
+</html>

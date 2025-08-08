@@ -1,0 +1,10 @@
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Helvetica,Arial,sans-serif;line-height:1.5;background:#111;color:#eee}
+header{padding:16px;border-bottom:1px solid #333;background:#0d0d0d}
+h1,h2{margin:0 0 8px 0}
+nav a{color:#7bdcff;text-decoration:none;margin-right:12px}
+nav a:hover{text-decoration:underline}
+main{max-width:800px;margin:24px auto;padding:0 16px}
+section{margin:24px 0}
+footer{padding:16px;border-top:1px solid #333;text-align:center;color:#aaa}
+.card{border:1px solid #333;border-radius:8px;padding:12px;margin:12px 0;background:#151515}
+#feed .item{margin:10px 0;padding:10px;border-left:4px solid #7bdcff;background:#151515;border-radius:4px}
