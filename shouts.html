@@ -1,47 +1,110 @@
 <!doctype html>
 <html lang="es">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Libro de visitas</title>
-  <link rel="stylesheet" href="assets/style.css">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Libro de visitas — Fonda de la Manada</title>
+  <style>
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Helvetica,Arial,sans-serif;background:#0d1117;color:#e6edf3;margin:0}
+    header,main,footer{max-width:920px;margin:auto;padding:16px}
+    a{color:#58a6ff}
+    .card{background:#161b22;border:1px solid #30363d;border-radius:10px;padding:16px;margin:14px 0}
+    blockquote{margin:0;padding:0 0 0 12px;border-left:4px solid #30363d}
+    footer small{color:#8b949e}
+    .muted{color:#8b949e}
+  </style>
 </head>
 <body>
-<header>
-  <h1>Libro de visitas</h1>
-  <nav>
-    <a href="index.html">Inicio</a>
-    <a href="about.html">Acerca de</a>
-  </nav>
-</header>
-<main>
-  <p>Deja tu mensaje en el <strong>Google Form</strong> y se mostrará acá. (Instrucciones en README.md)</p>
-  <div id="shouts"></div>
-</main>
-<footer><small>Gracias por pasar.</small></footer>
-<script>
-// Reemplaza esta URL por la de tu Google Sheets publicado como CSV:
-const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTtOp8XcYeVII_HxyM7FJoGdcTnA7pCYNPiQal-5KHRrTxNoylTA1JjN3WBmP5jaykunb8kfZLIXp5G/pub?gid=1175400149&single=true&output=csv";
-async function loadCSV(url){
-  const res = await fetch(url);
-  const text = await res.text();
-  const rows = text.trim().split(/\r?\n/).map(r => r.split(","));
-  const [head, ...body] = rows;
-  return body.map(cols => Object.fromEntries(cols.map((v,i)=>[head[i], v])));
-}
-function render(items){
-  const box = document.getElementById('shouts');
-  if(!items.length){ box.innerHTML = "<p>(Aún sin mensajes)</p>"; return; }
-  box.innerHTML = items.slice(-50).reverse().map(it=>`
-    <article class="card">
-      <p>${(it.Mensaje||"").replace(/</g,"&lt;")}</p>
-      <small>— ${(it.Autor||"Anónimo")}</small>
-    </article>
-  `).join("");
-}
-loadCSV(CSV_URL).then(render).catch(()=>{
-  document.getElementById('shouts').innerHTML = "<p>No se pudo cargar el CSV. Revisa la URL.</p>";
-});
-</script>
+  <header>
+    <h1>Libro de visitas</h1>
+    <p class="muted">Deja tu mensaje en el formulario y aparecerá aquí abajo, solito. 😊</p>
+  </header>
+
+  <!-- FORM embebido (reemplaza la URL del src con la de tu Google Form > Enviar > <> ) -->
+  <main class="card">
+    <iframe src="https://docs.google.com/forms/d/e/1FAIpQLSex4vk7w1z8oUkYD_0Qlnqu40if1NYoTFP6_ImFThndAPpfNA/viewform?embedded=true" width="100%" height="520" frameborder="0" loading="lazy"></iframe>
+  </main>
+
+  <main>
+    <h2>Shouts de la manada</h2>
+    <div id="shouts" class="card"><em class="muted">Cargando mensajes…</em></div>
+  </main>
+
+  <footer>
+    <small>Gracias por pasar. — <a href="./index.html">Volver al inicio</a></small>
+  </footer>
+
+  <script>
+  // URL pública del CSV (la que me diste)
+  const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTtOp8XcYeVII_HxyM7FJoGdcTnA7pCYNPiQal-5KHRrTxNoylTA1JjN3WBmP5jaykunb8kfZLIXp5G/pub?gid=1175400149&single=true&output=csv";
+
+  // separa CSV respetando comillas
+  function parseCSV(text){
+    const rows = [];
+    let cur = '', inQ = false, row = [];
+    for (let i=0;i<text.length;i++){
+      const c = text[i], n = text[i+1];
+      if (c === '"' && n === '"'){ cur+='"'; i++; continue; }
+      if (c === '"'){ inQ = !inQ; continue; }
+      if (c === ',' && !inQ){ row.push(cur); cur=''; continue; }
+      if ((c === '\n' || c === '\r') && !inQ){
+        if (cur.length || row.length){ row.push(cur); rows.push(row); row=[]; cur=''; }
+        continue;
+      }
+      cur += c;
+    }
+    if (cur.length || row.length) { row.push(cur); rows.push(row); }
+    return rows.filter(r => r.some(c => c.trim() !== ''));
+  }
+
+  function findColIndex(headers, names){
+    const norm = s => s.toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu,'').trim();
+    const H = headers.map(norm);
+    for (const name of names){
+      const i = H.indexOf(norm(name));
+      if (i !== -1) return i;
+    }
+    return -1;
+  }
+
+  async function cargarShouts(){
+    try{
+      const res = await fetch(CSV_URL, {cache:'no-store'});
+      const text = await res.text();
+      const rows = parseCSV(text);
+      if (!rows.length){ document.getElementById('shouts').innerHTML = '<em class="muted">Aún no hay mensajes.</em>'; return; }
+
+      const headers = rows[0];
+      const data = rows.slice(1);
+
+      // intenta detectar columnas por nombre; fallback a índices [1]=Nombre, [2]=Mensaje
+      let iNombre = findColIndex(headers, ['nombre','name','autor','quien']);
+      let iMensaje = findColIndex(headers, ['mensaje','message','comentario','texto','shout']);
+      if (iNombre === -1) iNombre = 1;
+      if (iMensaje === -1) iMensaje = 2;
+
+      // últimos primero
+      const items = data.reverse().map(r => ({
+        nombre: (r[iNombre]||'Anónimo').trim(),
+        mensaje: (r[iMensaje]||'').trim()
+      })).filter(x => x.mensaje);
+
+      const html = items.map(x => `
+        <div class="card">
+          <blockquote><p>${x.mensaje.replace(/\n/g,'<br>')}</p></blockquote>
+          <footer class="muted">— ${x.nombre}</footer>
+        </div>
+      `).join('') || '<em class="muted">Aún no hay mensajes.</em>';
+
+      document.getElementById('shouts').innerHTML = html;
+    }catch(e){
+      document.getElementById('shouts').innerHTML = '<em class="muted">No pude leer la planilla (¿está publicada?).</em>';
+      console.error(e);
+    }
+  }
+
+  cargarShouts();
+  setInterval(cargarShouts, 30000); // refresca cada 30s
+  </script>
 </body>
 </html>
