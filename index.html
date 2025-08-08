@@ -36,5 +36,23 @@
 </footer>
 
 <script src="assets/script.js"></script>
+<ul id="shouts"></ul>
+<script>
+async function cargarMensajes() {
+  const url = 'https://vitoco2025.github.io/fonda-manada/data/messages.json?_=' + Date.now();
+  const res = await fetch(url);
+  const arr = await res.json();
+  const cont = document.getElementById('shouts');
+  cont.innerHTML = '';
+  for (const m of arr) {
+    const li = document.createElement('li');
+    const fecha = new Date(m.timestamp).toLocaleString();
+    li.textContent = `(${fecha}) ${m.name}: ${m.message}`;
+    cont.appendChild(li);
+  }
+}
+cargarMensajes();
+setInterval(cargarMensajes, 10000);
+</script>
 </body>
 </html>
