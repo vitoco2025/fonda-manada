@@ -21,7 +21,7 @@
 <footer><small>Gracias por pasar.</small></footer>
 <script>
 // Reemplaza esta URL por la de tu Google Sheets publicado como CSV:
-const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTtOp8XcYeVII_HxyM7FJoGdcTnA7pCYNPiQal-5KHRrTxNoylTA1JjN3WBmP5jaykunb8kfZLIXp5G/pubhtml?gid=1175400149&single=true";
+const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTtOp8XcYeVII_HxyM7FJoGdcTnA7pCYNPiQal-5KHRrTxNoylTA1JjN3WBmP5jaykunb8kfZLIXp5G/pub?gid=1175400149&single=true&output=csv";
 async function loadCSV(url){
   const res = await fetch(url);
   const text = await res.text();
